@@ -13,8 +13,10 @@ void piegeD(int rang)
     }
     else if (rang == 1)
     {
+        int tmp = 0;
         double r;
-        MPI_Recv(&r, 1, MPI_DOUBLE, 0, 1000, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&tmp, 1, MPI_INT, 0, 1000, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        r = (double)tmp;
         printf("r = %g\n", r);
     }
 }

@@ -14,7 +14,7 @@ void piegeC(int rang)
     }
     else if (rang == 1)
     {
-        MPI_Recv(&c, 1, MPI_CHAR, 0, 2000, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&c, 1, MPI_CHAR, 0, 1000, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         printf("%c\n", c);
     }
 }

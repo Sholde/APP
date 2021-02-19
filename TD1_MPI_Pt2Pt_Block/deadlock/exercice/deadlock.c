@@ -6,8 +6,16 @@ void echange_dangereux(int rang, char *buf_send, char *buf_recv, int n) {
     MPI_Status sta;
     int vois = (rang+1) % 2;
 
-    MPI_Send(buf_send, n, MPI_BYTE, vois, 0, MPI_COMM_WORLD);
-    MPI_Recv(buf_recv, n, MPI_BYTE, vois, 0, MPI_COMM_WORLD, &sta);
+    if (rang == 0)
+      {
+        MPI_Recv(buf_recv, n, MPI_BYTE, vois, 0, MPI_COMM_WORLD, &sta);
+        MPI_Ssend(buf_send, n, MPI_BYTE, vois, 0, MPI_COMM_WORLD);
+      }
+    else
+      {
+        MPI_Ssend(buf_send, n, MPI_BYTE, vois, 0, MPI_COMM_WORLD);
+        MPI_Recv(buf_recv, n, MPI_BYTE, vois, 0, MPI_COMM_WORLD, &sta);
+      }
 }
 
 int main(int argc, char **argv) {
@@ -20,18 +28,18 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &P);
 
     if (argc != 2) {
-	if (rang == 0)
-	    printf("Utilisation : %s <n>\n", argv[0]);
-	abort();
-	return 1;
+        if (rang == 0)
+            printf("Utilisation : %s <n>\n", argv[0]);
+        abort();
+        return 1;
     }
     n = atoi(argv[1]);
 
     if (P != 2) {
-	if (rang == 0)
-	    printf("Il faut exactement 2 processus MPI et non %d\n", P);
-	abort();
-	return 1;
+        if (rang == 0)
+            printf("Il faut exactement 2 processus MPI et non %d\n", P);
+        abort();
+        return 1;
     }
 
     buf_send = calloc(n, sizeof(char));

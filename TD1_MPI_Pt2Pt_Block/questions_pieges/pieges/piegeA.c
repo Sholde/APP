@@ -20,12 +20,13 @@ void piegeA(int rang)
     }
     else if (rang == 1)
     {
-        int recue;
+        int recue[n];
+
+        MPI_Recv(&recue, n, MPI_INT, /*src=*/0,  /*tag=*/1000, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         for(i = 0 ; i < n ; i++)
         {
-            MPI_Recv(&recue, 1, MPI_INT, /*src=*/0,  /*tag=*/1000, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            printf("%d\n", recue);
+            printf("%d\n", recue[i]);
         }
     }
 }
