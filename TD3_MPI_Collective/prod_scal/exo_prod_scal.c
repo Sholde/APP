@@ -28,15 +28,15 @@ void init_info(int n, struct info_t *info) {
 
     if (info->rang < R) {
 
-	info->nloc = Q+1;
-	info->ideb = info->rang * (Q+1);
-	info->ifin = info->ideb + info->nloc;
+        info->nloc = Q+1;
+        info->ideb = info->rang * (Q+1);
+        info->ifin = info->ideb + info->nloc;
 
     } else {
 
-	info->nloc = Q;
-	info->ideb = R * (Q+1) + (info->rang - R) * Q;
-	info->ifin = info->ideb + info->nloc;
+        info->nloc = Q;
+        info->ideb = R * (Q+1) + (info->rang - R) * Q;
+        info->ifin = info->ideb + info->nloc;
     }
 
     printf("%d %d %d %d %d %d\n", info->nproc, info->rang, info->ntot, info->nloc, info->ideb, info->ifin);
@@ -51,9 +51,9 @@ void lire_fichier(const char *nom, double *x, struct info_t *info)  {
     fd = fopen(nom, "r");
 
     for( i = 0 ; i < info->ideb ; i++ )
-	fscanf(fd, "%lf\n", &val);
+        fscanf(fd, "%lf\n", &val);
     for( i = info->ideb ; i < info->ifin ; i++ )
-	fscanf(fd, "%lf\n", &(x[i - info->ideb]));
+        fscanf(fd, "%lf\n", &(x[i - info->ideb]));
 
     fclose(fd);
 }
@@ -62,16 +62,18 @@ void lire_fichier(const char *nom, double *x, struct info_t *info)  {
 
 double produit_scalaire(int N, double *a, double *b) {
 
-    /* A PARALLELISER */
-    double res;
-    int i;
+  /* A PARALLELISER */
+  double res, res_local;
+  int i;
 
-    res = 0;
+  res_local = 0;
 
-    for( i = 0 ; i < N ; i++ )
-	res += a[i]*b[i];
+  for( i = 0 ; i < N ; i++ )
+    res_local += a[i]*b[i];
 
-    return res;
+  MPI_Allreduce(&res_local, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  return res;
 }
 
 int main(int argc, char **argv) {
@@ -101,12 +103,12 @@ int main(int argc, char **argv) {
     err = fabs(res - Nglob)/(double)Nglob;
     if (err < 1.e-6)
     {
-	printf("PASSED\n");
+        printf("PASSED\n");
     }
     else
     {
-	printf("Solution exacte : %g\n", (double)Nglob);
-	printf("FAILED\n");
+        printf("Solution exacte : %g\n", (double)Nglob);
+        printf("FAILED\n");
     }
 
     free(x);
