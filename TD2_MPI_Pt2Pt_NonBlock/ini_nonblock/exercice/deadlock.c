@@ -14,8 +14,18 @@ int main(int argc, char **argv)
 
         to_send = rank;
 
-        MPI_Ssend(&to_send, 1, MPI_INT, vois, 1000, MPI_COMM_WORLD);
+        // Prepare non-blocking send
+        MPI_Request req;
+        MPI_Status sta;
+
+        // Send
+        MPI_Isend(&to_send, 1, MPI_INT, vois, 1000, MPI_COMM_WORLD, &req);
+
+        // Collect send
         MPI_Recv (&to_recv, 1, MPI_INT, vois, 1000, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        // Wait request
+        MPI_Wait(&req, &sta);
 
         printf("P%d : received value from P%d = %d\n", rank, vois, to_recv);
     }

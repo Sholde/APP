@@ -77,6 +77,31 @@ int main(int argc, char **argv)
            Verifier le resultat en appelant la fonction check_val_array(rang_impair, tab_rcv, nvals_per_proc)
        */
 
+    if (rank == 0)
+      {
+        int nimpair = nproc / 2 + nproc % 2;
+        MPI_Request req[nimpair];
+        int tab_snd[nproc * nvals_per_proc];
+
+        for (int i = 1, j = 0; i < nproc; i += 2, j++)
+          {
+            fill_val_array(i, tab_snd + j * nvals_per_proc, nvals_per_proc);
+            MPI_Isend(tab_snd + j * nvals_per_proc, nvals_per_proc, MPI_INT, i, 0, MPI_COMM_WORLD, &req[j]);
+          }
+
+        MPI_Waitall(nimpair, req, MPI_STATUS_IGNORE);
+      }
+    else if (rank % 2)
+      {
+        MPI_Request req;
+        int tab_rcv[nvals_per_proc];
+        
+        MPI_Irecv(&tab_rcv, nvals_per_proc, MPI_INT, 0, 0, MPI_COMM_WORLD, &req);
+
+        MPI_Wait(&req, MPI_STATUS_IGNORE);
+
+        check_val_array(rank, tab_rcv, nvals_per_proc);
+      }
 
     MPI_Finalize();
 

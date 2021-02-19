@@ -16,6 +16,7 @@ communications(float *my_values)
     int rank, size, array_size;
     int tag, left_neighbor, right_neighbor;
     MPI_Status status;
+    MPI_Request req[4];
 
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -31,35 +32,17 @@ communications(float *my_values)
      * Les processus de rang impair envoient leur dernière case à leur voisin de droite
      */
 
-    if( !(rank % 2) ) /* rangs pairs */
-    {
-        /* 1 est la première case de tableau réel */
-        MPI_Send( &my_values[1], 1, MPI_FLOAT, left_neighbor, tag, MPI_COMM_WORLD );
-        /* 0 est la maille fantôme de gauche */
-        MPI_Recv( &my_values[0], 1, MPI_FLOAT, left_neighbor, tag, MPI_COMM_WORLD, &status );
-    }
-    else /* rangs impairs */
-    {
-        /* array_size + 1 est la maille fantôme de droite */
-        MPI_Recv( &my_values[array_size + 1], 1, MPI_FLOAT, right_neighbor, tag, MPI_COMM_WORLD, &status );
-        /* array_size est la dernière case du tableau réel */
-        MPI_Send( &my_values[array_size    ], 1, MPI_FLOAT, right_neighbor, tag, MPI_COMM_WORLD );
-    }
+    /* 1 est la première case de tableau réel */
+    MPI_Isend( &my_values[1], 1, MPI_FLOAT, left_neighbor, tag, MPI_COMM_WORLD, req );
+    /* 0 est la maille fantôme de gauche */
+    MPI_Irecv( &my_values[0], 1, MPI_FLOAT, left_neighbor, tag, MPI_COMM_WORLD, req + 1);
 
-    /* On fait ensuite les échanges dans l'ordre inverse 
-     * pour finir la mise a jour des mailles fantômes
-     */
+    /* array_size + 1 est la maille fantôme de droite */
+    MPI_Irecv( &my_values[array_size + 1], 1, MPI_FLOAT, right_neighbor, tag, MPI_COMM_WORLD, req + 2);
+    /* array_size est la dernière case du tableau réel */
+    MPI_Isend( &my_values[array_size    ], 1, MPI_FLOAT, right_neighbor, tag, MPI_COMM_WORLD, req + 3);
 
-    if( ( rank % 2 ) ) /* rangs impairs */
-    {
-        MPI_Send( &my_values[1], 1, MPI_FLOAT, left_neighbor, tag, MPI_COMM_WORLD );
-        MPI_Recv( &my_values[0], 1, MPI_FLOAT, left_neighbor, tag, MPI_COMM_WORLD, &status );
-    }
-    else /* rangs pairs */
-    {
-        MPI_Recv( &my_values[array_size + 1], 1, MPI_FLOAT, right_neighbor, tag, MPI_COMM_WORLD, &status );
-        MPI_Send( &my_values[array_size    ], 1, MPI_FLOAT, right_neighbor, tag, MPI_COMM_WORLD );
-    }
+    MPI_Waitall(4, req, MPI_STATUSES_IGNORE);
 
     return;
 }
@@ -70,7 +53,7 @@ convolution(float *my_values, float *tmp_values)
     int i, k, size, array_size;
     
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    array_size = BUFFER_SIZE / size;	
+    array_size = BUFFER_SIZE / size;    
     
     /* On évite la maille fantôme 
      * Pour rappel: le tableau a array_size + 2 elts 
@@ -109,12 +92,12 @@ int main(int argc, char **argv)
     
     if( rank == 0)
     {
-        full_vector = malloc( BUFFER_SIZE * sizeof( float ) );	
+        full_vector = malloc( BUFFER_SIZE * sizeof( float ) );  
         assert( full_vector != NULL );
 
         /* Initialisation du tableau */
         for( i = 0; i < BUFFER_SIZE; i++ )
-		full_vector[i] = i;
+                full_vector[i] = i;
     } 
     
     array_size = BUFFER_SIZE / size; 
@@ -138,10 +121,10 @@ int main(int argc, char **argv)
 
     for( i = 0; i < MAX_REPEAT_NB; i++)
     { 
-	/* Communications */
+        /* Communications */
         communications( my_values );
 
-	/* Convolution */
+        /* Convolution */
         convolution( my_values, tmp_values );
     }
 
@@ -157,7 +140,7 @@ int main(int argc, char **argv)
 
     /* Libération de la mémoire */
     if( rank == 0 )
-	    free(full_vector);	
+            free(full_vector);  
     free(my_values);
     free(tmp_values);
 
