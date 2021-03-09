@@ -1,0 +1,13 @@
+Mmain	main.c	/^int main(){$/
+dfill	dfill.c	/^  dfill(int n, double val, double a[], int ia){$/
+domove	domove.c	/^  domove(int n3, double x[], double vh[], double f/
+dscal	dscal.c	/^  dscal(int n,double sa,double sx[], int incx){$/
+fcc	fcc.c	/^  fcc(double x[], int npart, int mm, double a){$/
+forces	forces.c	/^  forces(int npart, double x[], double f[], double/
+mkekin	mkekin.c	/^  mkekin(int npart, double f[], double vh[], doubl/
+mxwell	mxwell.c	/^  mxwell(double vh[], int n3, double h, double tre/
+prnout	prnout.c	/^  prnout(int move, double ekin, double epot, doubl/
+random	random.c	/^double random()$/
+secnds	main.c	/^double secnds()$/
+seed	random.c	/^\/\/$/
+velavg	velavg.c	/^  velavg(int npart, double vh[], double vaver, dou/
