@@ -21,10 +21,8 @@ int main(int argc, char **argv)
         int res;
         res = mkdir("REP_COMMUN", 0700);
     }
-    else
-    {
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
 
     sprintf(file_name, "REP_COMMUN/trace.P%d", rank);
     fd = fopen(file_name, "w");

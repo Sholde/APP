@@ -21,12 +21,12 @@ int main(int argc, char **argv)
     {
         if (i == rank)
         {
-            MPI_Bcast(&val_to_send, 1, MPI_INT, rank, MPI_COMM_WORLD);
+            MPI_Bcast(&val_to_send, 1, MPI_INT, i, MPI_COMM_WORLD);
             all_vals[i] = val_to_send;
         }
         else
         {
-            MPI_Bcast(all_vals+i, 1, MPI_INT, rank, MPI_COMM_WORLD);
+            MPI_Bcast(all_vals+i, 1, MPI_INT, i, MPI_COMM_WORLD);
         }
     }
 

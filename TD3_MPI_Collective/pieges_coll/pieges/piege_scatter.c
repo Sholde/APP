@@ -27,7 +27,7 @@ int main(int argc, char **argv)
         }
 
         MPI_Scatter(
-                vals_to_distrib, P, MPI_INT,
+                vals_to_distrib, 1, MPI_INT,
                 &val_to_recv, 1, MPI_INT,
                 root, MPI_COMM_WORLD);
     }

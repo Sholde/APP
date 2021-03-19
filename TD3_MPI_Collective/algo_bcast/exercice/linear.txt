@@ -1,0 +1,14 @@
+1000 bytes
+Telaps for 100 bcast = 6.536e-05 s
+1000 bytes
+Telaps for 100 bcast = 1.950e-04 s
+1000 bytes
+Telaps for 100 bcast = 6.175e-02 s
+1000 bytes
+Telaps for 100 bcast = 3.453e-01 s
+1000 bytes
+Telaps for 100 bcast = 8.084e-01 s
+1000 bytes
+Telaps for 100 bcast = 1.645e+00 s
+1000 bytes
+Telaps for 100 bcast = 2.802e+00 s

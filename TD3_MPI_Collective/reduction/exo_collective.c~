@@ -16,32 +16,20 @@ double reduction_somme(double in)
   int root = 0;
 
   // Stock result
-  double res = in;
+  double res = 0;
+  double tmp[size];
   
-  if (rank != root)
-    {
-      // Send to 0 res_loc
-      MPI_Send(&res, 1, MPI_DOUBLE, root, 0, MPI_COMM_WORLD);
+  MPI_Gather(&in, 1, MPI_DOUBLE, tmp, 1, MPI_DOUBLE, root, MPI_COMM_WORLD);
 
-      // Recv from 0 res_glob
-      MPI_Recv(&res, 1, MPI_DOUBLE, root, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-  else /* rank 0 */
+  if (rank == root)
     {
-      // Recv all res_loc
-      for (int i = 1; i < size; i++)
+      for (int i = 0; i < size; i++)
         {
-          double tmp = 0;
-          MPI_Recv(&tmp, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); /* sta.MPI_SOURCE */
-          res += tmp;
-        }
-      
-      // Send res_glob to all
-      for (int i = 1; i < size; i++)
-        {
-          MPI_Send(&res, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+          res += tmp[i];
         }
     }
+  
+  MPI_Bcast(&res, 1, MPI_DOUBLE, root, MPI_COMM_WORLD);
 
   return res;
 }
