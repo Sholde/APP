@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_ar = PTHREAD_COND_INITIALIZER;
 
 int valB = 0;
-
+int count = 0;
 
 int work(int valeur)
 {   
@@ -20,35 +20,63 @@ int work(int valeur)
 
 void * runA(void * arg)
 {
-   int valA = 0;
-   while(1)
-   {
+  int round = 0;
+  int valA = 0;
+  while(1)
+    {
       valA = work(valA);
     
       pthread_mutex_lock(&mutex);
-   
-      printf("*A* En attente de B\n");
-      pthread_cond_wait(&cond, &mutex);
-      
+      {
+        if (count == 2 * round)
+          {
+            count++;
+            printf("*A* En attente de B\n");
+            pthread_cond_wait(&cond, &mutex);
+          }
+        else
+          {
+            printf("*A* N'attent pas B\n");
+            count++;
+          }
+        pthread_cond_signal(&cond_ar);
+      }
       pthread_mutex_unlock(&mutex);
-      
+
       /* Les deux valeurs devraient toujours être égales */
       printf("*A* Valeur de A: %d Valeur de B: %d\n", valA, valB);
+      round++;
    }
-   return NULL;
+  return NULL;
 }
 
 
 void * runB(void * arg)
 {
-   while(1)
-   {
+  int round = 0;
+  while(1)
+    {
       valB = work(valB);
-      
-      /*Signale à A que j'ai calculé valB*/
-      pthread_cond_signal(&cond);     
-      printf("*B* Valeur calculée %d \n", valB);
-   }
+
+      pthread_mutex_lock(&mutex);
+      {
+        if (count != 2 * round)
+          {
+            count++;
+            /*Signale à A que j'ai calculé valB*/
+            pthread_cond_signal(&cond);     
+            printf("*B* Valeur calculée %d \n", valB);
+          }
+        else
+          {
+            count++;
+            printf("*B* fini avant A\n"); 
+          }
+        pthread_cond_wait(&cond_ar, &mutex);
+      }
+      pthread_mutex_unlock(&mutex);
+      round++;
+    }
    return NULL;
 }
 
