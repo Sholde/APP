@@ -1,8 +1,10 @@
+
 #include <omp.h>
 /*
  *  Compute forces and accumulate the virial and the potential
  */
 extern double epot, vir;
+extern double **tmp;
 
 void
 forces(int npart, double x[], double f[], double side, double rcoff){
@@ -14,6 +16,9 @@ forces(int npart, double x[], double f[], double side, double rcoff){
     epot   = 0.0;
   }
 
+  int nt = omp_get_max_threads();
+  int me = omp_get_thread_num();
+  
 #pragma omp for schedule(runtime) reduction(+:epot) reduction(-:vir)
   for (i=0; i<npart*3; i+=3) {
 
@@ -60,21 +65,28 @@ forces(int npart, double x[], double f[], double side, double rcoff){
         fyi     += yy*r148;
         fzi     += zz*r148;
 
-#pragma omp atomic
-        f[j]    -= xx*r148;
-#pragma omp atomic
-        f[j+1]  -= yy*r148;
-#pragma omp atomic
-        f[j+2]  -= zz*r148;
+        tmp[me][j]    -= xx*r148;
+        tmp[me][j+1]  -= yy*r148;
+        tmp[me][j+2]  -= zz*r148;
       }
     }
 
     // update forces on particle i
-#pragma omp atomic
-    f[i]     += fxi;
-#pragma omp atomic
-    f[i+1]   += fyi;
-#pragma omp atomic
-    f[i+2]   += fzi;
+    tmp[me][i]     += fxi;
+    tmp[me][i+1]   += fyi;
+    tmp[me][i+2]   += fzi;
   }
+
+#pragma omp single
+  {
+    for (int i = 0; i < nt; i++)
+      {
+        for (int j = 0; j < npart * 3; j++)
+          {
+            f[j] += tmp[i][j];
+            tmp[i][j] = 0;
+          }
+      }
   }
+  
+}

@@ -2,6 +2,7 @@
 #include <math.h>
 #include <time.h>
 #include <omp.h> 
+#include <stdlib.h>
 
 #ifdef MAXI
 #define mm 15
@@ -61,6 +62,11 @@
   double vir;
   double count;
 
+  double sum;
+  double vel;
+
+  double **tmp;
+
 /*
  *  Main program : Molecular Dynamics simulation.
  */
@@ -92,6 +98,18 @@ int main(){
   double hsq2   = hsq*0.5;
   double tscale = 16.0/((double)npart-1.0);
   double vaver  = 1.13*sqrt(tref/24.0);
+
+  int nt = omp_get_max_threads();
+  tmp = malloc(sizeof(double *) * nt);
+  for (int i = 0; i < nt; i++)
+    {
+      tmp[i] = malloc(sizeof(double) * npart * 3);
+      for (int j = 0; j < npart * 3; j++)
+        {
+          tmp[i][j] = 0;
+        }
+    }
+
 
   /*
    *  Initial output
@@ -134,41 +152,29 @@ int main(){
       /*
        *  Move the particles and partially update velocities
        */
-#pragma omp master
-      {
-        domove(3*npart, x, vh, f, side);
-      }
+#pragma omp barrier
+      domove(3*npart, x, vh, f, side);
 
       /*
        *  Compute forces in the new positions and accumulate the virial
        *  and potential energy.
        */
-#pragma omp barrier
       forces(npart, x, f, side, rcoff);
 
       /*
        *  Scale forces, complete update of velocities and compute k.e.
        */
-#pragma omp master
-      {
-        ekin=mkekin(npart, f, vh, hsq2, hsq);
-      }
+      ekin=mkekin(npart, f, vh, hsq2, hsq);
 
       /*
        *  Average the velocity and temperature scale if desired
        */
-#pragma omp master
-      {
-        vel=velavg(npart, vh, vaver, h);
-      }
+      vel=velavg(npart, vh, vaver, h);
 
-#pragma omp master
-      {
-        if (move<istop && fmod(move, irep)==0) {
-          sc=sqrt(tref/(tscale*ekin));
-          dscal(3*npart, sc, vh, 1);
-          ekin=tref/tscale;
-        }
+      if (move<istop && fmod(move, irep)==0) {
+        sc=sqrt(tref/(tscale*ekin));
+        dscal(3*npart, sc, vh, 1);
+        ekin=tref/tscale;
       }
 
       /*
@@ -184,7 +190,13 @@ int main(){
      
   time = secnds() - start;  
 
-  printf("Time =  %f\n",(float) time);  
+  printf("Time =  %f\n",(float) time);
+
+  for (int i = 0; i < nt; i++)
+    {
+      free(tmp[i]);
+    }
+  free(tmp);
 }
 
 time_t starttime = 0; 
