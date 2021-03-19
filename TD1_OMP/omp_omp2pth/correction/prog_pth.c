@@ -17,6 +17,7 @@ void *func(void *p_args)
     func_args_t *args = (func_args_t*)p_args;
     int i, sum_loc = 0;
 
+    printf("Je suis le maitre ! %d\n", args->rank);
     if (args->rank == 0)
     {
         printf("Je suis le maitre !\n");
@@ -50,7 +51,7 @@ int main(int argc, char **argv)
     tid = (pthread_t*)malloc(nthreads*sizeof(pthread_t));
     all_args = (func_args_t*)malloc(nthreads*sizeof(func_args_t));
 
-    for(t = 1 ; t < nthreads ; t++)
+    for(t = 0 ; t < nthreads ; t++)
     {
         all_args[t].rank = t;
         all_args[t].N    = N;
@@ -60,15 +61,7 @@ int main(int argc, char **argv)
         pthread_create(tid+t, NULL, func, all_args+t);
     }
 
-    /* Le thread principal représente le thread 0 ou master */
-    all_args[0].rank = 0;
-    all_args[0].N    = N;
-    all_args[0].mut  = &mut;
-    all_args[0].sum  = &sum;
-
-    func(all_args+0);
-
-    for(t = 1 ; t < nthreads ; t++)
+    for(t = 0 ; t < nthreads ; t++)
     {
         pthread_join(tid[t], NULL);
     }
