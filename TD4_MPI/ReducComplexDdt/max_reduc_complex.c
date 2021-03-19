@@ -7,6 +7,7 @@ struct complex_s
 {
     double real;
     double imag;
+    double rank;
 };
 typedef struct complex_s complex_t;
 
@@ -24,6 +25,7 @@ void init_tab_compl(complex_t *tab, int n)
     {
         tab[i].real = cos(deb   + ((double)(i+1))/(double)n);
         tab[i].imag = sin(deb+1 + ((double)(i+1))/(double)n);
+        tab[i].rank = (double)rang;
     }
 }
 
@@ -86,16 +88,33 @@ void calc_norm_max(
        A ECRIRE
        Recuperer dans *cpl_max le nombre complexe de plus grande norme sur l'ensemble du tableau distribué
      */
+
+    MPI_Allreduce(&(tab[imax]), cpl_max, 1, mpi_cpl, op_norm_max, MPI_COMM_WORLD);
 }
 
+void func_op_norm_max(void *in, void *inout, int *len, MPI_Datatype *ddt)
+{
+  complex_t *t_in = (complex_t *)in;
+  complex_t *t_inout = (complex_t *)inout;
+
+  for (int i = 0; i < *len; i++)
+    {
+      if (norm_compl(t_in + i) > norm_compl(t_inout + i))
+        {
+          t_inout[i].real = t_in[i].real;
+          t_inout[i].imag = t_in[i].imag;
+          t_inout[i].rank = t_in[i].rank;
+        }
+    }
+}
 
 int main(int argc, char **argv)
 {
     int rang;
     int n; /* nb d'éléments par processus */
 
-    MPI_Op op_norm_max;
-    MPI_Datatype mpi_cpl;
+    MPI_Op OP_NORM_MAX;
+    MPI_Datatype MY_MPI_COMPLEX;
     complex_t cpl_max;
     complex_t *tab;
 
@@ -124,17 +143,26 @@ int main(int argc, char **argv)
 
 
     /* A COMPLETER => creer mpi_cpl */
+
+    // Definition
+    MPI_Type_contiguous(3, MPI_DOUBLE, &MY_MPI_COMPLEX);
+
+    // Allocation
+    MPI_Type_commit(&MY_MPI_COMPLEX);
+
     /* A COMPLETER => creer op_norm_max */
+    MPI_Op_create(func_op_norm_max, 1, &OP_NORM_MAX);
 
-
-    calc_norm_max(tab, n, op_norm_max, mpi_cpl, &cpl_max);
-    printf("P%d, norm = %.6e\n", rang, norm_compl(&cpl_max));
+    calc_norm_max(tab, n, OP_NORM_MAX, MY_MPI_COMPLEX, &cpl_max);
+    printf("P%d, norm = %.6e rang = %d\n", rang, norm_compl(&cpl_max), (int)cpl_max.rank);
 
     fd = fopen("pts_max", "w");
     fprintf(fd, "%.6e %.6e\n", cpl_max.real, cpl_max.imag);
     fclose(fd);
 
     /* A COMPLETER => liberation operateur, type derivé */
+    MPI_Op_free(&OP_NORM_MAX);
+    MPI_Type_free(&MY_MPI_COMPLEX);
 
     free(tab);
 
