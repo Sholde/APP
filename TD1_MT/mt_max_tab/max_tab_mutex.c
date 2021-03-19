@@ -7,9 +7,9 @@
 typedef struct info_s
 {
   int *tab;
-  int deb;
-  int fin;
-  int max_local;
+  int nelt;
+  int *max;
+  pthread_mutex_t *mut;
 } info_t;
 
 int max_seq(int *tab, int nelt)
@@ -32,14 +32,23 @@ void *max_parallel(void *arg)
 {
   info_t *info = (info_t *)arg;
 
-  for (int i = info->deb; i < info->fin; i++)
+  int max_local = 0;
+
+  for (int i = 0; i < info->nelt; i++)
     {
-      if (info->tab[i] > info->max_local)
+      if (info->tab[i] > max_local)
         {
-          info->max_local = info->tab[i];
+          max_local = info->tab[i];
         }
     }
 
+  pthread_mutex_lock(info->mut);
+  if (*(info->max) < max_local)
+    {
+      *(info->max) = max_local;
+    }
+  pthread_mutex_unlock(info->mut);
+    
   return NULL;
 }
 
@@ -66,31 +75,31 @@ int main(int argc, char **argv)
     pthread_t *tid = malloc(sizeof(pthread_t) * nthreads);
     info_t *info = malloc(sizeof(info_t) * nthreads);
 
+    pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+
     int truc = nelt / nthreads;
+    int lol  = nelt % nthreads;
+
+    int ideb = 0;
     
     for (int i = 0; i < nthreads; i++)
       {
-        info[i].tab = tab;
-        info[i].deb = i * truc;
-        info[i].fin = (i + 1) * truc;
-
-        if (info[i].fin >= nelt)
-          {
-            info[i].fin = nelt;
-          }
-
-        info[i].max_local = 0;
+        info[i].nelt = (i < lol ? truc + 1 : truc);
+        info[i].tab = tab + ideb;
+        info[i].max = &maxv_mt;
+        info[i].mut = &mut;
         
         pthread_create(&tid[i], NULL, max_parallel, &info[i]);
+
+        ideb += info[i].nelt;
       }
 
     for (int i = 0; i < nthreads; i++)
       {
         pthread_join(tid[i], NULL);
-
-        if (info[i].max_local > maxv_mt)
-          maxv_mt = info[i].max_local;
       }
+
+    pthread_mutex_destroy(&mut);
 
     /* Recherche du max en sequentiel pour verification => maxv_seq */
     maxv_seq = max_seq(tab, nelt);
